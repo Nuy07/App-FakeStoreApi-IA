@@ -1,18 +1,43 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { useState, createContext, useContext } from 'react';
+import { Stack, useRouter } from 'expo-router';
+// Importa la CLASE abstracta desde tus modelos, no desde el servicio
+import { User } from '../models/User'; 
+import { AuthService } from '../services/AuthService';
+import React from 'react';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+// Tipamos explícitamente con la clase User
+interface AuthContextType {
+  user: User | null;
+  login: (userData: User) => void;
+  logout: () => Promise<void>;
+}
 
-SplashScreen.preventAutoHideAsync();
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  login: () => {},
+  logout: async () => {},
+});
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export const useAuth = () => useContext(AuthContext);
+
+export default function RootLayout() {
+  const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
+
+  const login = (userData: User) => {
+    setUser(userData);
+    router.replace('/' as any);
+  };
+
+  const logout = async () => {
+    await AuthService.destroySession();
+    setUser(null);
+    router.replace('/login' as any);
+  };
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <AuthContext.Provider value={{ user, login, logout }}>
+      <Stack screenOptions={{ headerShown: false }} />
+    </AuthContext.Provider>
   );
 }
