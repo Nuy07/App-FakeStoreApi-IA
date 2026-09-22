@@ -30,7 +30,7 @@ export default function RootLayout() {
   };
 
   const logout = async () => {
-    await AuthService.destroySession();
+    await AuthService.logout();
     setUser(null);
     router.replace('/login' as any);
   };

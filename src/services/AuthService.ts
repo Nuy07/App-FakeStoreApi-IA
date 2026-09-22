@@ -35,21 +35,65 @@ export class AuthService {
     const userInstance = this.createUserInstance(userProfile, token);
 
     // Persistencia
-    await SecureStore.setItemAsync('userSession', JSON.stringify({
+    await SecureStore.setItemAsync('user_data', JSON.stringify({
       id: userInstance.id,
       username: userInstance.username,
       email: userInstance.email,
       fullName: userInstance.fullName,
       phone: userInstance.phone,
       role: userInstance.role,
-      token: userInstance.token,
     }));
+    await SecureStore.setItemAsync('user_token', userInstance.token);
 
     return userInstance;
   }
 
+  static async getCurrentUser(): Promise<User | null> {
+    const userData = await SecureStore.getItemAsync('user_data');
+    const token = await SecureStore.getItemAsync('user_token');
+
+    if (!userData) return null;
+
+    const storedUser = JSON.parse(userData);
+    const storedToken = token ?? '';
+    if (storedUser.role === 'Admin') {
+      return new AdminUser(
+        storedUser.id,
+        storedUser.username,
+        storedUser.email,
+        storedUser.fullName,
+        storedUser.phone,
+        storedToken,
+      );
+    }
+
+    if (storedUser.role === 'Auditor') {
+      return new AuditorUser(
+        storedUser.id,
+        storedUser.username,
+        storedUser.email,
+        storedUser.fullName,
+        storedUser.phone,
+        storedToken,
+      );
+    }
+
+    return new ClientUser(
+      storedUser.id,
+      storedUser.username,
+      storedUser.email,
+      storedUser.fullName,
+      storedUser.phone,
+      storedToken,
+    );
+  }
+
+  public static async logout(): Promise<void> {
+    await SecureStore.deleteItemAsync('user_data');
+    await SecureStore.deleteItemAsync('user_token');
+  }
+
   static async destroySession(): Promise<void> {
-    await SecureStore.deleteItemAsync('userSession');
-    await SecureStore.deleteItemAsync('cartData');
+    await this.logout();
   }
 }

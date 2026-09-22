@@ -1,126 +1,313 @@
-import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { useAuth } from './_layout';
-import { useRouter } from 'expo-router';
+// app/index.tsx
 
-export default function HomeScreen() {
-  const { user, logout } = useAuth();
+import React, { useEffect, useState } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  FlatList, 
+  Image, 
+  ActivityIndicator, 
+  TouchableOpacity, 
+  SafeAreaView 
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { AuthService } from '../services/AuthService';
+import { ProductService } from '../services/ProductService';
+import { User } from '../models/User';
+import { Product } from '../models/Product';
+import { CategoryFilter } from '../components/CategoryFilter';
+
+export default function DashboardScreen() {
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  
+  // Estados para el manejo del catálogo (US03, US04)
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) router.replace('/login' as any);
-  }, [user]);
+    loadUserData();
+    loadCategories();
+    fetchCatalog(null);
+  }, []);
 
-  if (!user) return null;
+  const loadUserData = async () => {
+    const currentUser = await AuthService.getCurrentUser();
+    if (!currentUser) {
+      router.replace('/login');
+    } else {
+      setUser(currentUser);
+    }
+  };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.welcomeLabel}>Panel de Usuario</Text>
-        <Text style={styles.headerTitle}>{user.fullName}</Text>
+  const loadCategories = async () => {
+    try {
+      const data = await ProductService.getCategories();
+      setCategories(data);
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar las categorías');
+    }
+  };
+
+  // Función para consumir el catálogo de productos
+  const fetchCatalog = async (category: string | null) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = category === null
+        ? await ProductService.getProducts()
+        : await ProductService.getProductsByCategory(category);
+      setProducts(data);
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar el catálogo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCategoryChange = async (category: string | null) => {
+    setSelectedCategory(category);
+    setProducts([]);
+    setLoading(true);
+    await fetchCatalog(category);
+  };
+
+  const handleLogout = async () => {
+    await AuthService.logout();
+    router.replace('/login');
+  };
+
+  // Renderizado individual de cada tarjeta de producto (Reciclado por FlatList)
+  const renderProductItem = ({ item }: { item: Product }) => (
+    <TouchableOpacity
+      style={styles.productCard}
+      onPress={() => router.push({ pathname: '/product/[id]', params: { id: item.id.toString() } })}
+    >
+      {/* Carga asíncrona de imagen */}
+      <Image 
+        source={{ uri: item.image }} 
+        style={styles.productImage} 
+        resizeMode="contain"
+      />
+      <View style={styles.productInfo}>
+        <Text style={styles.categoryText}>{item.category.toUpperCase()}</Text>
+        <Text style={styles.productTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
+        <Text style={styles.productPrice}>{item.formattedPrice}</Text>
       </View>
+    </TouchableOpacity>
+  );
 
-      <View style={styles.card}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+  // Encabezado con la información del Usuario Autenticado
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      {user && (
+        <View style={[styles.userCard, { borderColor: user.badgeColor }]}>
+          <View style={styles.userHeaderRow}>
+            <View>
+              <Text style={styles.welcomeText}>Bienvenido,</Text>
+              <Text style={styles.userNameText}>{user.fullName}</Text>
+            </View>
+            <View style={[styles.roleBadge, { backgroundColor: user.badgeColor }]}>
+              <Text style={styles.roleBadgeText}>{user.role}</Text>
+            </View>
+          </View>
+          <Text style={styles.userEmail}>{user.email}</Text>
           
-          <View style={styles.profileBox}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{user.username.charAt(0).toUpperCase()}</Text>
-            </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.usernameText}>@{user.username}</Text>
-              <View style={[styles.roleBadge, { backgroundColor: user.badgeColor }]}>
-                <Text style={styles.roleText}>{user.role}</Text>
-              </View>
-            </View>
-          </View>
-
-          <Text style={styles.sectionTitle}>Información de la Cuenta</Text>
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoKey}>ID de Usuario:</Text>
-              <Text style={styles.infoValue}>#{user.id}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoKey}>Correo:</Text>
-              <Text style={styles.infoValue}>{user.email}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoKey}>Teléfono:</Text>
-              <Text style={styles.infoValue}>{user.phone}</Text>
-            </View>
-          </View>
-
-          <Text style={styles.sectionTitle}>Permisos Asignados</Text>
-          <View style={styles.infoCard}>
-            {user.getPermissions().map((permission, index) => (
-              <View key={index} style={styles.permRow}>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={styles.permText}>{permission}</Text>
-              </View>
-            ))}
-          </View>
-
-          <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
           </TouchableOpacity>
+        </View>
+      )}
 
-        </ScrollView>
-      </View>
+      <Text style={styles.sectionTitle}>Catálogo General de Productos</Text>
+      <CategoryFilter
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onSelectCategory={handleCategoryChange}
+      />
     </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Escenario 2: Manejo de Estado de Carga (Loading Spinner) */}
+      {loading ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#583C8E" />
+          <Text style={styles.loadingText}>Cargando catálogo...</Text>
+        </View>
+      ) : error ? (
+        /* Escenario 3: Manejo de Error de Conexión con Botón Reintentar */
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorText}>⚠️ {error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => fetchCatalog(selectedCategory)}>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        /* Escenario 1: Renderizado Correcto del Catálogo en Vista Reciclable (FlatList) */
+        <FlatList
+          data={products}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderProductItem}
+          ListHeaderComponent={renderHeader}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          numColumns={2}
+          columnWrapperStyle={styles.columnWrapper}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#2B255B' },
-  header: { height: '22%', justifyContent: 'center', paddingHorizontal: 28, paddingTop: 30 },
-  welcomeLabel: { color: '#A5A1C9', fontSize: 14, fontWeight: '600' },
-  headerTitle: { color: '#FFF', fontSize: 22, fontWeight: 'bold', marginTop: 4 },
-  card: {
+  container: {
     flex: 1,
-    backgroundColor: '#F2F3F7',
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    backgroundColor: '#0B0D14',
   },
-  scrollContent: { paddingBottom: 30 },
-  profileBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
+  listContent: {
+    padding: 14,
+    paddingBottom: 28,
+  },
+  headerContainer: {
+    marginBottom: 16,
+  },
+  userCard: {
+    backgroundColor: '#171B29',
+    borderColor: '#2A3042',
+    borderRadius: 18,
+    borderWidth: 1,
+    marginBottom: 18,
     padding: 16,
-    borderRadius: 16,
-    marginBottom: 20,
   },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#583C8E',
+  userHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  welcomeText: {
+    color: '#8E98AC',
+    fontSize: 12,
+  },
+  userNameText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  roleBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  roleBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  userEmail: {
+    color: '#AEB7C8',
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  logoutButton: {
+    backgroundColor: '#222839',
+    borderColor: '#343B4F',
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  logoutButtonText: {
+    color: '#FF6B6B',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  sectionTitle: {
+    color: '#FFFFFF',
+    fontSize: 21,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  productCard: {
+    backgroundColor: '#171B29',
+    borderColor: '#252B3D',
+    borderRadius: 16,
+    borderWidth: 1,
+    width: '48.5%',
+    padding: 10,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
+  },
+  productImage: {
+    width: '100%',
+    height: 130,
+    borderRadius: 10,
+    backgroundColor: '#F5F6F8',
+  },
+  productInfo: {
+    width: '100%',
+    marginTop: 9,
+  },
+  categoryText: {
+    fontSize: 9,
+    color: '#A78BFA',
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  productTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#F4F6FA',
+    height: 36,
+  },
+  productPrice: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#C4B5FD',
+    marginTop: 6,
+  },
+  centerContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    padding: 20,
   },
-  avatarText: { color: '#FFF', fontSize: 22, fontWeight: 'bold' },
-  profileInfo: { flex: 1 },
-  usernameText: { fontSize: 16, fontWeight: 'bold', color: '#2B255B', marginBottom: 4 },
-  roleBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  roleText: { color: '#2B255B', fontWeight: 'bold', fontSize: 12 },
-  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#583C8E', marginBottom: 10, marginTop: 8 },
-  infoCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 16, marginBottom: 16 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  infoKey: { color: '#6B7280', fontSize: 14 },
-  infoValue: { color: '#2B255B', fontSize: 14, fontWeight: '600' },
-  permRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
-  bullet: { color: '#583C8E', fontSize: 16, marginRight: 8, fontWeight: 'bold' },
-  permText: { color: '#374151', fontSize: 14 },
-  logoutButton: {
-    backgroundColor: '#583C8E',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
+  loadingText: {
+    color: '#B8BFCE',
     marginTop: 12,
+    fontSize: 14,
   },
-  logoutButtonText: { color: '#FFF', fontSize: 15, fontWeight: 'bold' },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#583C8E',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
 });

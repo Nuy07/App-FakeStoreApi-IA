@@ -27,13 +27,16 @@ export abstract class User {
   // Métodos Abstractos que cada subclase implementa de forma única (Polimorfismo)
   abstract get role(): string;
   abstract get badgeColor(): string;
+  abstract get canManageProducts(): boolean;
   abstract getPermissions(): string[];
 }
+
 
 // Subclase Admin (Herencia)
 export class AdminUser extends User {
   get role() { return 'Admin'; }
   get badgeColor() { return '#FF3366'; }
+  get canManageProducts() { return true; }
   getPermissions() {
     return ['Lectura general', 'Escritura', 'Eliminación de usuarios', 'Panel Admin'];
   }
@@ -43,6 +46,7 @@ export class AdminUser extends User {
 export class AuditorUser extends User {
   get role() { return 'Auditor'; }
   get badgeColor() { return '#FFCC00'; }
+  get canManageProducts() { return false; }
   getPermissions() {
     return ['Lectura de registros', 'Historial de transacciones'];
   }
@@ -52,6 +56,7 @@ export class AuditorUser extends User {
 export class ClientUser extends User {
   get role() { return 'Usuario'; }
   get badgeColor() { return '#00FF9D'; }
+  get canManageProducts() { return false; }
   getPermissions() {
     return ['Navegación en catálogo', 'Gestión de carrito de compras'];
   }
