@@ -46,7 +46,7 @@ export class Product {
     return `$${this._price.toFixed(2)}`;
   }
 
-  // Método de fábrica (Factory) para convertir el JSON en una instancia de Product
+  // Convierte el objeto JSON de la API en una instancia tipada de Product.
   static fromJson(json: any): Product {
     return new Product(
       json.id,

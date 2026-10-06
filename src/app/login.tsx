@@ -14,11 +14,13 @@ import { useAuth } from './_layout';
 import { AuthService } from '../services/AuthService';
 
 export default function LoginScreen() {
+  // Obtiene la función del contexto que actualiza la sesión y navega al catálogo.
   const { login } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Valida el formulario, solicita autenticación a la API y guarda el usuario recibido.
   const handleLogin = async () => {
     if (!username || !password) {
       Alert.alert('Error', 'Por favor ingresa usuario y contraseña');
@@ -26,11 +28,21 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
+      // AuthService se encarga de llamar al endpoint de login y obtener el perfil.
       const userData = await AuthService.authenticate(username, password);
+      // Entrega el usuario autenticado al contexto global de la aplicación.
       login(userData);
-    } catch (error: any) {
-      Alert.alert('Error de acceso', error.message || 'Credenciales incorrectas');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Credenciales incorrectas';
+      const isNetworkError = /network|fetch/i.test(message);
+      Alert.alert(
+        isNetworkError ? 'Sin conexión' : 'Error de acceso',
+        isNetworkError
+          ? 'No se pudo conectar con el servidor. Verifica tu conexión a internet e inténtalo de nuevo.'
+          : message,
+      );
     } finally {
+      // Habilita nuevamente el botón después de terminar la petición.
       setLoading(false);
     }
   };

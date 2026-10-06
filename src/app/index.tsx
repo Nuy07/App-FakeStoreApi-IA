@@ -1,6 +1,7 @@
-// app/index.tsx
+// Pantalla principal del catálogo de productos.
 
-import React, { useEffect, useState } from 'react';
+// Hooks y componentes base de React Native utilizados por la pantalla.
+import React, { useCallback, useEffect, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -11,7 +12,7 @@ import {
   TouchableOpacity, 
   SafeAreaView 
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AuthService } from '../services/AuthService';
 import { ProductService } from '../services/ProductService';
 import { User } from '../models/User';
@@ -19,42 +20,33 @@ import { Product } from '../models/Product';
 import { CategoryFilter } from '../components/CategoryFilter';
 
 export default function DashboardScreen() {
+  // Router utilizado para navegar al login y al detalle de cada producto.
   const router = useRouter();
+  const { deleted } = useLocalSearchParams<{ deleted?: string | string[] }>();
+
+  // Estado del usuario autenticado que se muestra en el encabezado.
   const [user, setUser] = useState<User | null>(null);
   
-  // Estados para el manejo del catálogo (US03, US04)
+  // Estados para cargar, filtrar y mostrar el catálogo (US03, US04).
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadUserData();
-    loadCategories();
-    fetchCatalog(null);
-  }, []);
-
-  const loadUserData = async () => {
-    const currentUser = await AuthService.getCurrentUser();
-    if (!currentUser) {
-      router.replace('/login');
-    } else {
-      setUser(currentUser);
-    }
-  };
-
-  const loadCategories = async () => {
+  // Obtiene las categorías disponibles para el filtro del catálogo.
+  const loadCategories = useCallback(async () => {
     try {
       const data = await ProductService.getCategories();
       setCategories(data);
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar las categorías');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar las categorías');
     }
-  };
+  }, []);
 
-  // Función para consumir el catálogo de productos
-  const fetchCatalog = async (category: string | null) => {
+  // Obtiene todos los productos o únicamente los de la categoría seleccionada.
+  const fetchCatalog = useCallback(async (category: string | null) => {
     setLoading(true);
     setError(null);
     try {
@@ -62,32 +54,86 @@ export default function DashboardScreen() {
         ? await ProductService.getProducts()
         : await ProductService.getProductsByCategory(category);
       setProducts(data);
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar el catálogo');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar el catálogo');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
+  useEffect(() => {
+    const deletionNotice = Array.isArray(deleted) ? deleted[0] : deleted;
+    if (deletionNotice === 'success') {
+      setToastMessage('Producto eliminado correctamente (simulación).');
+      router.setParams({ deleted: undefined });
+    }
+  }, [deleted, router]);
+
+  useEffect(() => {
+    if (!toastMessage) return;
+
+    const timeout = setTimeout(() => setToastMessage(null), 3000);
+    return () => clearTimeout(timeout);
+  }, [toastMessage]);
+
+  // Comprueba la sesión primero; los datos del catálogo no se solicitan sin autenticar.
+  useEffect(() => {
+    let mounted = true;
+
+    const loadUserData = async () => {
+      try {
+        const currentUser = await AuthService.getCurrentUser();
+        if (!mounted) return;
+
+        if (!currentUser) {
+          router.replace('/login');
+          return;
+        }
+
+        setUser(currentUser);
+      } catch (err) {
+        if (!mounted) return;
+        setError(err instanceof Error ? err.message : 'No se pudo verificar la sesión.');
+        setLoading(false);
+      }
+    };
+
+    void loadUserData();
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
+
+  // Carga el catálogo y sus categorías únicamente después de validar la sesión.
+  useEffect(() => {
+    if (!user) return;
+
+    void loadCategories();
+    void fetchCatalog(null);
+  }, [user, loadCategories, fetchCatalog]);
+
+  // Actualiza el filtro seleccionado y vuelve a cargar el catálogo.
   const handleCategoryChange = async (category: string | null) => {
     setSelectedCategory(category);
     setProducts([]);
     setLoading(true);
+    // El cambio del filtro dispara una nueva consulta al endpoint correspondiente.
     await fetchCatalog(category);
   };
 
+  // Cierra la sesión actual y devuelve al usuario a la pantalla de login.
   const handleLogout = async () => {
     await AuthService.logout();
     router.replace('/login');
   };
 
-  // Renderizado individual de cada tarjeta de producto (Reciclado por FlatList)
+  // Renderiza una tarjeta individual; FlatList reutiliza este bloque por producto.
   const renderProductItem = ({ item }: { item: Product }) => (
     <TouchableOpacity
       style={styles.productCard}
       onPress={() => router.push({ pathname: '/product/[id]', params: { id: item.id.toString() } })}
     >
-      {/* Carga asíncrona de imagen */}
+      {/* Muestra la imagen remota asociada al producto. */}
       <Image 
         source={{ uri: item.image }} 
         style={styles.productImage} 
@@ -103,7 +149,7 @@ export default function DashboardScreen() {
     </TouchableOpacity>
   );
 
-  // Encabezado con la información del Usuario Autenticado
+  // Construye el encabezado con el usuario, el botón de cierre y el filtro.
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       {user && (
@@ -126,6 +172,15 @@ export default function DashboardScreen() {
       )}
 
       <Text style={styles.sectionTitle}>Catálogo General de Productos</Text>
+      {user?.canManageProducts && (
+        <TouchableOpacity
+          style={styles.addProductButton}
+          onPress={() => router.push('/product/create')}
+          accessibilityRole="button"
+        >
+          <Text style={styles.addProductButtonText}>+ Agregar producto</Text>
+        </TouchableOpacity>
+      )}
       <CategoryFilter
         categories={categories}
         selectedCategory={selectedCategory}
@@ -134,16 +189,22 @@ export default function DashboardScreen() {
     </View>
   );
 
+  // Selecciona la vista correspondiente al estado actual de la carga.
   return (
     <SafeAreaView style={styles.container}>
-      {/* Escenario 2: Manejo de Estado de Carga (Loading Spinner) */}
+      {toastMessage && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </View>
+      )}
+      {/* Estado de carga mientras se consulta el catálogo. */}
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#583C8E" />
           <Text style={styles.loadingText}>Cargando catálogo...</Text>
         </View>
       ) : error ? (
-        /* Escenario 3: Manejo de Error de Conexión con Botón Reintentar */
+        /* Estado de error con una acción para repetir la consulta. */
         <View style={styles.centerContainer}>
           <Text style={styles.errorText}>⚠️ {error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => fetchCatalog(selectedCategory)}>
@@ -151,7 +212,7 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        /* Escenario 1: Renderizado Correcto del Catálogo en Vista Reciclable (FlatList) */
+        /* Estado exitoso: catálogo optimizado mediante una lista reciclable. */
         <FlatList
           data={products}
           keyExtractor={(item) => item.id.toString()}
@@ -167,10 +228,30 @@ export default function DashboardScreen() {
   );
 }
 
+// Estilos visuales de la pantalla, del encabezado y de las tarjetas.
 const styles = StyleSheet.create({
+  // Estructura general de la pantalla y del contenido de la lista.
   container: {
     flex: 1,
     backgroundColor: '#0B0D14',
+  },
+  toast: {
+    position: 'absolute',
+    top: 12,
+    left: 20,
+    right: 20,
+    zIndex: 1,
+    backgroundColor: '#166534',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    elevation: 6,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   listContent: {
     padding: 14,
@@ -179,6 +260,8 @@ const styles = StyleSheet.create({
   headerContainer: {
     marginBottom: 16,
   },
+
+  // Tarjeta con la información y las acciones del usuario.
   userCard: {
     backgroundColor: '#171B29',
     borderColor: '#2A3042',
@@ -217,6 +300,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 12,
   },
+
+  // Botón para cerrar la sesión y sus textos asociados.
   logoutButton: {
     backgroundColor: '#222839',
     borderColor: '#343B4F',
@@ -236,6 +321,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 6,
   },
+  addProductButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#583C8E',
+    borderRadius: 10,
+    marginTop: 8,
+    marginBottom: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  addProductButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+
+  // Distribución de las columnas y apariencia de cada producto.
   columnWrapper: {
     justifyContent: 'space-between',
     marginBottom: 12,
@@ -282,6 +384,8 @@ const styles = StyleSheet.create({
     color: '#C4B5FD',
     marginTop: 6,
   },
+
+  // Estados de carga, error y acción para reintentar la consulta.
   centerContainer: {
     flex: 1,
     justifyContent: 'center',

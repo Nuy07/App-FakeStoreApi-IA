@@ -21,14 +21,17 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export default function RootLayout() {
+  // Mantiene disponible en toda la aplicación el usuario autenticado.
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
+  // Actualiza el contexto después de una autenticación exitosa.
   const login = (userData: User) => {
     setUser(userData);
     router.replace('/' as any);
   };
 
+  // Cierra la sesión mediante AuthService y redirige a la pantalla de login.
   const logout = async () => {
     await AuthService.logout();
     setUser(null);

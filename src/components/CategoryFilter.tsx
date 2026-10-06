@@ -11,6 +11,8 @@ export function CategoryFilter({
   selectedCategory,
   onSelectCategory,
 }: CategoryFilterProps) {
+  // Este componente no consulta la API directamente; notifica la categoría elegida
+  // para que la pantalla principal solicite los productos filtrados.
   return (
     <ScrollView
       horizontal
