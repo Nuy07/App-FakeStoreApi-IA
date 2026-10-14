@@ -64,7 +64,7 @@ export default function DashboardScreen() {
   useEffect(() => {
     const deletionNotice = Array.isArray(deleted) ? deleted[0] : deleted;
     if (deletionNotice === 'success') {
-      setToastMessage('Producto eliminado correctamente (simulación).');
+      setToastMessage('Producto eliminado correctamente.');
       router.setParams({ deleted: undefined });
     }
   }, [deleted, router]);

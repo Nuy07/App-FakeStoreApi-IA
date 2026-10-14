@@ -1,6 +1,18 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { User, AdminUser, AuditorUser, ClientUser } from '../models/User';
+import { API_BASE_URL } from './ApiConfig';
+
+interface ApiUserProfile {
+  id: number;
+  username: string;
+  email: string;
+  phone: string;
+  name: {
+    firstname: string;
+    lastname: string;
+  };
+}
 
 export class AuthService {
   // Usa localStorage en web y SecureStore en dispositivos nativos.
@@ -33,7 +45,7 @@ export class AuthService {
   }
 
   // Convierte el perfil recibido de la API en la subclase de usuario correspondiente.
-  private static createUserInstance(profile: any, token: string): User {
+  private static createUserInstance(profile: ApiUserProfile, token: string): User {
     const fullName = `${profile.name.firstname} ${profile.name.lastname}`.toUpperCase();
 
     if (profile.id === 1 || profile.id === 2) {
@@ -47,8 +59,7 @@ export class AuthService {
 
   // Autentica las credenciales y después consulta el perfil completo del usuario.
   static async authenticate(username: string, password: string): Promise<User> {
-    // Envía las credenciales al endpoint de autenticación de FakeStore API.
-    const authRes = await fetch('https://fakestoreapi.com/auth/login', {
+    const authRes = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -58,12 +69,16 @@ export class AuthService {
     if (!authRes.ok) throw new Error('Credenciales incorrectas');
 
     // Extrae el token generado para la sesión autenticada.
-    const { token } = await authRes.json();
+    const authData: { token: string } = await authRes.json();
+    const { token } = authData;
 
     // Obtiene los perfiles para completar los datos del usuario autenticado.
-    const usersRes = await fetch('https://fakestoreapi.com/users');
-    const usersData = await usersRes.json();
-    const userProfile = usersData.find((u: any) => u.username === username);
+    const usersRes = await fetch(`${API_BASE_URL}/users`);
+    if (!usersRes.ok) {
+      throw new Error(`No se pudo cargar el perfil del usuario (${usersRes.status}).`);
+    }
+    const usersData: ApiUserProfile[] = await usersRes.json();
+    const userProfile = usersData.find((user) => user.username === username);
 
     if (!userProfile) throw new Error('Usuario no encontrado');
 

@@ -53,7 +53,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.header}>
-        <Text style={styles.headerSubtitle}>FakeStore API</Text>
+        <Text style={styles.headerSubtitle}>API de Aventura</Text>
       </View>
 
       <View style={styles.card}>

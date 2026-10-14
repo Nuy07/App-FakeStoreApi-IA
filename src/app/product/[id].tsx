@@ -125,7 +125,7 @@ export default function ProductDetailScreen() {
       setProduct(updatedProduct);
       setEditing(false);
       setEditErrors({});
-      Alert.alert('Producto actualizado (Simulación)');
+      Alert.alert('Producto actualizado correctamente.');
     } catch (error) {
       Alert.alert(
         'Error',

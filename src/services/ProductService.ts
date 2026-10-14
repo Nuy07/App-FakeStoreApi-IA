@@ -2,6 +2,7 @@
 
 import { Product } from '../models/Product';
 import { AuthService } from './AuthService';
+import { API_BASE_URL } from './ApiConfig';
 
 export interface NewProductData {
   title: string;
@@ -12,8 +13,7 @@ export interface NewProductData {
 }
 
 export class ProductService {
-  // URL base de todos los endpoints de productos de FakeStore API.
-  private static BASE_URL = 'https://fakestoreapi.com/products';
+  private static BASE_URL = `${API_BASE_URL}/products`;
 
   // Consulta el catálogo completo y transforma cada respuesta JSON en un Product.
   public static async getProducts(): Promise<Product[]> {
@@ -21,7 +21,7 @@ export class ProductService {
     try {
       response = await fetch(this.BASE_URL);
     } catch (error) {
-      console.warn('No se pudo establecer conexión con Fake Store API:', error);
+      console.warn('No se pudo establecer conexión con la API:', error);
       throw new Error('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
     }
 
@@ -98,7 +98,7 @@ export class ProductService {
     }
   }
 
-  // Crea un producto y usa el ID simulado devuelto por Fake Store API.
+  // Crea un producto y conserva el ID asignado por la API.
   public static async createProduct(product: NewProductData): Promise<Product> {
     try {
       const response = await fetch(this.BASE_URL, {
@@ -165,7 +165,7 @@ export class ProductService {
     }
   }
 
-  // Elimina un producto mediante DELETE; Fake Store API solo simula la operación.
+  // Elimina un producto mediante DELETE.
   public static async deleteProduct(id: number): Promise<Product> {
     const currentUser = await AuthService.getCurrentUser();
     if (!currentUser?.canManageProducts) {

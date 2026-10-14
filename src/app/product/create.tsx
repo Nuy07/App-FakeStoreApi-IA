@@ -141,7 +141,7 @@ export default function CreateProductScreen() {
       setErrors({});
       Alert.alert(
         'Producto creado',
-        `El producto se creó con el ID ${createdProduct.id}.\n\nFake Store API simula esta creación; el producto no aparecerá en consultas posteriores.`,
+        `El producto se creó correctamente con el ID ${createdProduct.id}.`,
       );
     } catch (error) {
       Alert.alert(
