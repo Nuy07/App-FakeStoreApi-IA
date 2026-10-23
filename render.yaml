@@ -1,0 +1,31 @@
+# Blueprint de Render: despliega la API (carpeta api-python) en el plan gratis.
+# En Render: New > Blueprint > elige este repositorio > Deploy Blueprint.
+# Te pedirá los valores marcados con "sync: false" (los datos de conexión de Supabase).
+services:
+  - type: web
+    name: fakestore-api                 # también forma la URL: https://fakestore-api(-xxxx).onrender.com
+    runtime: python
+    plan: free                          # sin esta línea Render crea un servicio de pago
+    region: virginia                    # cerca de Supabase "East US (North Virginia)"
+    rootDir: api-python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /
+    autoDeployTrigger: commit           # vuelve a desplegar en cada push a la rama
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.14.2"                 # la misma versión con la que se probó la API
+      - key: DB_HOST
+        sync: false                     # aws-<n>-<región>.pooler.supabase.com (Supabase > Connect > Session pooler)
+      - key: DB_PORT
+        value: "5432"                   # pooler en modo sesión (funciona con IPv4, que es lo que tiene Render)
+      - key: DB_USER
+        sync: false                     # postgres.<ref-del-proyecto>
+      - key: DB_PASSWORD
+        sync: false                     # la contraseña de la base de datos de Supabase
+      - key: DB_NAME
+        value: postgres
+      - key: DB_SSLMODE
+        value: require
+      - key: JWT_SECRET
+        generateValue: true             # Render inventa una clave aleatoria para firmar los tokens

@@ -1,0 +1,4 @@
+# Credenciales locales de la base de datos
+.env
+
+__pycache__/

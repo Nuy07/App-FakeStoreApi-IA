@@ -2,21 +2,20 @@
 
 ## Conectar con la API de Python
 
-La app consume la API FastAPI ubicada en `..\api-python`. Desde una terminal,
-inicia el servidor con:
+La app consume la API FastAPI de la carpeta `api-python/`, que a su vez lee los
+datos de PostgreSQL en Supabase. La base de datos se crea con
+`database/fakestore_db.sql` y la API se despliega en Render con `render.yaml`.
 
-```powershell
-cd ..\api-python
-python -m pip install fastapi uvicorn
-python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+Para usar la API publicada en Render, crea `mi-app/.env` con su URL e inicia
+Expo con `npx expo start -c`:
+
+```
+EXPO_PUBLIC_API_URL=https://<tu-servicio>.onrender.com
 ```
 
-En otra terminal, inicia Expo desde `mi-app` con `npm run start`. Durante el
-desarrollo, la app toma la dirección del servidor Expo para conectarse a la API
-en el puerto `8000`. Si la API corre en otra máquina o dirección, configura
-`EXPO_PUBLIC_API_URL` (por ejemplo, `http://192.168.1.25:8000`) antes de iniciar
-Expo. En un teléfono, ambos equipos deben estar en la misma red, y la dirección
-configurada no debe ser `localhost`.
+Sin esa variable, la app busca la API en tu computadora: toma la dirección del
+servidor Expo y usa el puerto `8000`. En un teléfono, ambos equipos deben estar
+en la misma red.
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
