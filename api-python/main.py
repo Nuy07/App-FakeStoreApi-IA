@@ -1,5 +1,7 @@
+import itertools
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,13 +13,15 @@ import config
 from auth import create_token, current_user, require_roles
 from database import check_status, engine, is_connection_error
 from repositories import carts, products, users
-from schemas import ProductInput, UserLogin
+from schemas import CartInput, ProductInput, UserLogin
 
 logger = logging.getLogger("uvicorn.error")
 
 # Quién puede hacer qué (el rol se guarda en la columna usuarios.rol).
 admin_only = [Depends(require_roles("admin"))]
 staff_only = [Depends(require_roles("admin", "auditor"))]
+# El auditor sólo consulta: no puede armar un carrito (US09).
+cart_user = require_roles("cliente", "admin")
 
 
 # Al arrancar sólo avisa cómo está la BD; la API sigue funcionando aunque no responda.
@@ -129,7 +133,7 @@ def get_user(user_id: int):
     return user
 
 
-# --- RUTAS / ENDPOINTS DE CARRITOS (sólo admin y auditor) ---
+# --- RUTAS / ENDPOINTS DE CARRITOS GUARDADOS EN LA BD (sólo admin y auditor) ---
 @app.get("/carts", dependencies=staff_only)
 def get_carts():
     return carts.get_all()
@@ -140,6 +144,36 @@ def get_cart(cart_id: int):
     if cart is None:
         raise HTTPException(status_code=404, detail="Cart not found")
     return cart
+
+
+# --- CARRITO DEL CLIENTE (simulado, US09 y US10) ---
+# Igual que FakeStoreAPI, estas rutas responden como si guardaran el carrito pero no
+# tocan la BD: la app lo mantiene en el dispositivo mientras dure la sesión. El userId
+# de la respuesta sale del token, no del cuerpo, para que nadie actúe a nombre de otro.
+# Los ids simulados empiezan en 1001 para no confundirse con los carritos reales de la BD.
+_simulated_cart_ids = itertools.count(1001)
+
+
+def _cart_response(cart_id, user, cart: CartInput):
+    return {
+        "id": cart_id,
+        "userId": user["id"],
+        "date": cart.date or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+        "products": [product.model_dump() for product in cart.products],
+    }
+
+@app.post("/carts", status_code=201)
+def create_cart(cart: CartInput, user=Depends(cart_user)):
+    return _cart_response(next(_simulated_cart_ids), user, cart)
+
+@app.put("/carts/{cart_id}")
+def update_cart(cart_id: int, cart: CartInput, user=Depends(cart_user)):
+    return _cart_response(cart_id, user, cart)
+
+# productId indica qué artículo se quitó; sin él se entiende que se vació el carrito.
+@app.delete("/carts/{cart_id}")
+def delete_cart(cart_id: int, productId: int | None = None, user=Depends(cart_user)):
+    return {"id": cart_id, "userId": user["id"], "productId": productId}
 
 
 # --- ENDPOINTS DE AUTENTICACIÓN ---

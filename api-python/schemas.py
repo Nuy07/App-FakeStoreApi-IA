@@ -31,3 +31,16 @@ class ProductInput(BaseModel):
     description: Text = Field(max_length=10000)          # TEXT admite ~64 KB
     category: Text = Field(min_length=1, max_length=100)
     image: Text = Field(max_length=2048)
+
+
+# Un renglón del carrito: qué producto y cuántas piezas.
+class CartProduct(BaseModel):
+    productId: int = Field(gt=0)
+    quantity: int = Field(ge=1, le=999)
+
+
+# Mismo formato que FakeStoreAPI: {"userId": 1, "date": "...", "products": [...]}.
+class CartInput(BaseModel):
+    userId: int | None = None
+    date: Text | None = Field(default=None, max_length=40)
+    products: list[CartProduct] = Field(max_length=100)
