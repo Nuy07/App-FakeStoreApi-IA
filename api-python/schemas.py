@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
@@ -22,7 +22,7 @@ class UserLogin(BaseModel):
 
 # Los límites coinciden con las columnas de la tabla productos, para que un dato
 # inválido se rechace con 422 antes de llegar a MySQL. Los espacios al inicio y al
-# final se quitan, así " ropa outdoor " no crea una categoría nueva.
+# final se quitan, así " café frío " no crea una categoría nueva.
 class ProductInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -33,10 +33,15 @@ class ProductInput(BaseModel):
     image: Text = Field(max_length=2048)
 
 
-# Un renglón del carrito: qué producto y cuántas piezas.
+# Tamaños de las bebidas de la cafetería (chico, mediano y grande).
+DrinkSize = Literal["S", "M", "L"]
+
+
+# Un renglón del carrito: qué bebida, de qué tamaño y cuántas piezas.
 class CartProduct(BaseModel):
     productId: int = Field(gt=0)
     quantity: int = Field(ge=1, le=999)
+    size: DrinkSize = "S"
 
 
 # Mismo formato que FakeStoreAPI: {"userId": 1, "date": "...", "products": [...]}.

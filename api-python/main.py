@@ -13,7 +13,7 @@ import config
 from auth import create_token, current_user, require_roles
 from database import check_status, engine, is_connection_error
 from repositories import carts, products, users
-from schemas import CartInput, ProductInput, UserLogin
+from schemas import CartInput, DrinkSize, ProductInput, UserLogin
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -170,10 +170,11 @@ def create_cart(cart: CartInput, user=Depends(cart_user)):
 def update_cart(cart_id: int, cart: CartInput, user=Depends(cart_user)):
     return _cart_response(cart_id, user, cart)
 
-# productId indica qué artículo se quitó; sin él se entiende que se vació el carrito.
+# productId y size indican qué bebida se quitó; sin ellos se entiende que se vació el carrito.
 @app.delete("/carts/{cart_id}")
-def delete_cart(cart_id: int, productId: int | None = None, user=Depends(cart_user)):
-    return {"id": cart_id, "userId": user["id"], "productId": productId}
+def delete_cart(cart_id: int, productId: int | None = None, size: DrinkSize | None = None,
+                user=Depends(cart_user)):
+    return {"id": cart_id, "userId": user["id"], "productId": productId, "size": size}
 
 
 # --- ENDPOINTS DE AUTENTICACIÓN ---

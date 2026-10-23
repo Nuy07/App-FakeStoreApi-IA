@@ -70,7 +70,7 @@ CREATE INDEX idx_direcciones_usuario ON public.direcciones (usuario_id);
 -- =====================================================================
 -- 3. categorias
 --    Catálogo de categorías de producto (equivalente a /products/categories).
---    El índice sobre lower(nombre) hace que "Ropa Outdoor" y "ropa outdoor"
+--    El índice sobre lower(nombre) hace que "Café Frío" y "café frío"
 --    sean la misma categoría, pero "electronica" y "electrónica" no.
 -- =====================================================================
 CREATE TABLE public.categorias (
@@ -313,8 +313,9 @@ ALTER TABLE public.version_esquema  ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================================
 -- DATOS DE PRUEBA
---    Catálogo de aventura y supervivencia que antes vivía en las listas
---    products_db / users_db / carts_db de api-python/main.py.
+--    Menú de la cafetería: bebidas calientes, frías, frappés y tés. El
+--    precio es el del tamaño chico; la app suma el extra del mediano y
+--    del grande. Las fotos son de Unsplash (uso libre).
 --    Las contraseñas de los usuarios no cambian (p. ej. carlos_exp /
 --    SecurePass#1); aquí sólo se guarda su hash.
 -- =====================================================================
@@ -337,33 +338,33 @@ INSERT INTO public.direcciones (usuario_id, calle, numero_ext, ciudad, codigo_po
 
 -- Categorías
 INSERT INTO public.categorias (id, nombre) VALUES
-(1, 'equipo de campamento'),
-(2, 'ropa outdoor'),
-(3, 'accesorios de supervivencia'),
-(4, 'tecnología y energía');
+(1, 'café caliente'),
+(2, 'café frío'),
+(3, 'frappés'),
+(4, 'tés y chocolate');
 
 -- Productos. calificacion_suma = promedio x cantidad, para que el trigger de reseñas parta de ahí.
 INSERT INTO public.productos (id, titulo, descripcion, precio, categoria_id, imagen_url, calificacion_promedio, calificacion_cantidad, calificacion_suma) VALUES
-(1, 'Mochila Táctica Militar de Expedición 50L', 'Mochila robusta y resistente al agua, diseñada para senderismo extremo y campamentos de varios días. Múltiples compartimentos y soporte lumbar ergonómico.', 125.50, 1, 'https://fakestoreapi.com/img/81fPKd-2AYL._AC_SL1500_t.png', 4.8, 140, 672.0),
-(2, 'Camisa Térmica de Manga Larga Antihumedad', 'Prenda ligera y transpirable con tecnología de secado rápido. Ideal para mantener la temperatura corporal estable durante caminatas largas.', 28.99, 2, 'https://fakestoreapi.com/img/71-3HjGNDUL._AC_SY879._SX._UX._SY._UY_t.png', 4.5, 310, 1395.0),
-(3, 'Chaqueta Impermeable Acolchada para Montaña', 'Chaqueta cortavientos e impermeable para climas fríos y lluviosos. Forro interno térmico desmontable para máxima versatilidad.', 89.00, 2, 'https://fakestoreapi.com/img/71li-ujtlUL._AC_UX679_t.png', 4.9, 520, 2548.0),
-(4, 'Pantalón Cargo Ajustable de Trekking', 'Pantalón flexible y duradero con bolsillos laterales reforzados. Tela resistente a desgarros para terrenos difíciles.', 24.50, 2, 'https://fakestoreapi.com/img/71YXzeOuslL._AC_UY879_t.png', 4.2, 190, 798.0),
-(5, 'Brújula de Supervivencia de Latón con Espejo Solar', 'Instrumento de navegación clásico de alta precisión, relleno de líquido para una lectura rápida y carcasa metálica ultrarresistente.', 45.00, 3, 'https://fakestoreapi.com/img/71pWzhdJNwL._AC_UL640_QL65_ML3_t.png', 4.7, 95, 446.5),
-(6, 'Anillo de Titanio Multiusos para Emergencias', 'Anillo minimalista de grado aeroespacial con micro-herramientas de corte integradas y alta resistencia a impactos.', 35.00, 3, 'https://fakestoreapi.com/img/61sbMiUnoGL._AC_UL640_QL65_ML3_t.png', 4.0, 65, 260.0),
-(7, 'Silbato de Emergencia de Alta Frecuencia', 'Silbato de rescate de doble tubo capaz de emitir hasta 120 decibelios para señales de auxilio a grandes distancias.', 12.99, 3, 'https://fakestoreapi.com/img/71YAIFU48IL._AC_UL640_QL65_ML3_t.png', 4.3, 215, 924.5),
-(8, 'Kit de Anzuelos y Sedal de Pesca de Bolsillo', 'Mini estuche hermético con aparejos de pesca esenciales para situaciones de supervivencia en la naturaleza.', 15.00, 3, 'https://fakestoreapi.com/img/51UDEzMJVpL._AC_UL640_QL65_ML3_t.png', 4.1, 110, 451.0),
-(9, 'Disco Duro Externo Antigolpes 2TB USB 3.1', 'Unidad de almacenamiento portátil con cubierta de goma resistente a caídas y protección contra salpicaduras de agua.', 79.99, 4, 'https://fakestoreapi.com/img/61IBBVJvSDL._AC_SY879_t.png', 4.4, 280, 1232.0),
-(10, 'SSD Interno de Alto Rendimiento 1TB SATA III', 'Optimiza la velocidad de carga de tus mapas offline, software de navegación y sistemas multimedia portátiles.', 95.00, 4, 'https://fakestoreapi.com/img/61U7T1koQqL._AC_SX679_t.png', 4.6, 410, 1886.0),
-(11, 'Tarjeta MicroSD de Alta Resistencia 256GB con Adaptador', 'Diseñada para cámaras de acción y drones; soporta temperaturas extremas, rayos X y caídas de agua.', 39.99, 4, 'https://fakestoreapi.com/img/71kWymZ+c+L._AC_SX679_t.png', 4.9, 350, 1715.0),
-(12, 'Batería Externa Solar de Gran Capacidad 20,000 mAh', 'Cargador portátil con panel solar integrado y linterna LED de emergencia, perfecto para largas travesías sin conexión eléctrica.', 49.99, 4, 'https://fakestoreapi.com/img/61mtL65D4cL._AC_SX679_t.png', 4.7, 480, 2256.0),
-(13, 'Panel Solar Portátil Plegable 60W para Campamento', 'Cargador solar de alta conversión con puertos USB múltiples para alimentar dispositivos móviles y baterías de campo.', 149.99, 4, 'https://fakestoreapi.com/img/81QpkIctqPL._AC_SX679_t.png', 4.5, 180, 810.0),
-(14, 'Estación de Energía Portátil de 500W con Salida AC', 'Generador de energía silencioso para campamentos base, capaz de mantener refrigeradores pequeños, luces y equipos de comunicación.', 450.00, 4, 'https://fakestoreapi.com/img/81Zt42ioCgL._AC_SX679_t.png', 4.8, 125, 600.0),
-(15, 'Chaqueta Polar Montañera 3 en 1 para Clima Extremo', 'Sistema de doble capa con polar interno extraíble y capa exterior cortavientos. Máximo aislamiento térmico.', 75.00, 2, 'https://fakestoreapi.com/img/51Y5NI-I5jL._AC_UX679_t.png', 4.6, 240, 1104.0),
-(16, 'Chaqueta Rompevientos Estilo Motociclista de Lona Reforzada', 'Diseño resistente a la abrasión con protecciones ligeras en codos y hombros para rodadas en carretera y campo traviesa.', 65.00, 2, 'https://fakestoreapi.com/img/81XH0e8fefL._AC_UY879_t.png', 4.3, 305, 1311.5),
-(17, 'Poncho Impermeable Largo con Capucha para Lluvia Torrencial', 'Capa impermeable ultraligera de cobertura total, adaptable para llevar con mochila grande incluida debajo.', 22.50, 2, 'https://fakestoreapi.com/img/71HblAHs5xL._AC_UY879_-2t.png', 4.4, 512, 2252.8),
-(18, 'Playera Deportiva de Secado Rápido con Protección UV', 'Tejido técnico con factor de protección solar UPF 50+, ideal para exposición prolongada al sol bajo el aire libre.', 18.00, 2, 'https://fakestoreapi.com/img/71z3kpMAYsL._AC_UY879_t.png', 4.7, 175, 822.5),
-(19, 'Camiseta de Compresión Térmica sin Costuras', 'Diseñada para mejorar la circulación sanguínea y evitar rozaduras durante actividades físicas intensas.', 16.50, 2, 'https://fakestoreapi.com/img/51eg55uWmdL._AC_UX679_t.png', 4.5, 198, 891.0),
-(20, 'Playera de Algodón Orgánico para Campamento Casual', 'Comodidad absoluta para momentos de descanso alrededor de la fogata al finalizar el día.', 14.99, 2, 'https://fakestoreapi.com/img/61pHAEJ4NML._AC_UX679_t.png', 4.2, 160, 672.0);
+(1, 'Espresso', 'Una carga intensa de café recién molido, extraída a presión. Cuerpo denso, crema dorada y notas de cacao y caramelo tostado.', 35.00, 1, 'https://images.unsplash.com/photo-1592663527359-cf6642f54cff?w=800&q=80&auto=format&fit=crop', 4.7, 120, 564.0),
+(2, 'Americano', 'Espresso alargado con agua caliente. Suave, aromático y perfecto para acompañar el desayuno o una tarde de trabajo.', 40.00, 1, 'https://images.unsplash.com/photo-1551030173-122aabc4489c?w=800&q=80&auto=format&fit=crop', 4.5, 210, 945.0),
+(3, 'Cappuccino', 'Espresso con leche vaporizada y una capa generosa de espuma cremosa, espolvoreado con un toque de cacao.', 55.00, 1, 'https://images.unsplash.com/photo-1557006021-b85faa2bc5e2?w=800&q=80&auto=format&fit=crop', 4.8, 340, 1632.0),
+(4, 'Latte', 'Espresso con abundante leche vaporizada y una ligera capa de espuma decorada con arte latte. Suave y equilibrado.', 55.00, 1, 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=800&q=80&auto=format&fit=crop', 4.7, 410, 1927.0),
+(5, 'Flat White', 'Doble espresso con leche microtexturizada en menor cantidad que un latte, para que el sabor del café sea el protagonista.', 60.00, 1, 'https://images.unsplash.com/photo-1485808191679-5f86510681a2?w=800&q=80&auto=format&fit=crop', 4.6, 150, 690.0),
+(6, 'Latte de Vainilla', 'Nuestro latte clásico endulzado con jarabe de vainilla natural. Cremoso, dulce y reconfortante.', 62.00, 1, 'https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=800&q=80&auto=format&fit=crop', 4.5, 180, 810.0),
+(7, 'Cold Brew', 'Café infusionado en frío durante 18 horas. Menos ácido, naturalmente dulce y servido sobre mucho hielo.', 55.00, 2, 'https://images.unsplash.com/photo-1517959105821-eaf2591984ca?w=800&q=80&auto=format&fit=crop', 4.8, 260, 1248.0),
+(8, 'Latte Helado', 'Espresso servido sobre hielo y leche fría. Refrescante, suave y listo para los días calurosos.', 60.00, 2, 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=800&q=80&auto=format&fit=crop', 4.6, 300, 1380.0),
+(9, 'Café Vietnamita Helado', 'Café intenso preparado gota a gota y mezclado con leche condensada sobre hielo. Dulce, cremoso y con mucho carácter.', 65.00, 2, 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800&q=80&auto=format&fit=crop', 4.9, 140, 686.0),
+(10, 'Caramel Macchiato Helado', 'Leche fría con jarabe de vainilla, espresso vertido encima y un hilo de caramelo. Se ve tan bien como sabe.', 68.00, 2, 'https://images.unsplash.com/photo-1497636577773-f1231844b336?w=800&q=80&auto=format&fit=crop', 4.7, 230, 1081.0),
+(11, 'Latte Helado de Avellana', 'Espresso, leche fría y jarabe de avellana tostada sobre hielo. Un sabor a nuez suave y aromático.', 68.00, 2, 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=800&q=80&auto=format&fit=crop', 4.4, 95, 418.0),
+(12, 'Frappé de Caramelo', 'Hecho con un rico sabor a caramelo y un toque de café, licuado con hielo y coronado con crema batida y caramelo líquido.', 75.00, 3, 'https://images.unsplash.com/photo-1586195831800-24f14c992cea?w=800&q=80&auto=format&fit=crop', 4.9, 520, 2548.0),
+(13, 'Frappé de Moka', 'Café, chocolate oscuro y leche licuados con hielo, con crema batida y virutas de chocolate encima.', 75.00, 3, 'https://images.unsplash.com/photo-1528740096961-3798add19cb7?w=800&q=80&auto=format&fit=crop', 4.7, 310, 1457.0),
+(14, 'Frappé Cookies & Cream', 'Base cremosa de vainilla licuada con galletas de chocolate y hielo, terminada con crema batida y más galleta.', 80.00, 3, 'https://images.unsplash.com/photo-1606791405792-1004f1718d0c?w=800&q=80&auto=format&fit=crop', 4.8, 275, 1320.0),
+(15, 'Frappé Chocolate Extremo', 'Para los amantes del chocolate: triple chocolate licuado con hielo, crema batida, salsa de chocolate y brownie.', 85.00, 3, 'https://images.unsplash.com/photo-1608651057580-4a50b2fc2281?w=800&q=80&auto=format&fit=crop', 4.6, 160, 736.0),
+(16, 'Matcha Latte', 'Té verde matcha ceremonial batido con leche vaporizada. Notas herbales, color vibrante y energía sin prisa.', 65.00, 4, 'https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=800&q=80&auto=format&fit=crop', 4.7, 200, 940.0),
+(17, 'Chai Latte', 'Té negro especiado con canela, cardamomo, jengibre y clavo, mezclado con leche vaporizada.', 60.00, 4, 'https://images.unsplash.com/photo-1595434091143-b375ced5fe5c?w=800&q=80&auto=format&fit=crop', 4.5, 170, 765.0),
+(18, 'Chocolate Caliente', 'Chocolate de mesa derretido en leche caliente, espeso y espumoso, con un toque de canela.', 50.00, 4, 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=800&q=80&auto=format&fit=crop', 4.8, 240, 1152.0),
+(19, 'Té Negro', 'Infusión de hojas de té negro seleccionadas, servida en tetera. Aroma maltoso y final limpio.', 35.00, 4, 'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=800&q=80&auto=format&fit=crop', 4.3, 85, 365.5),
+(20, 'Té Helado de Hibisco', 'Infusión fría de flor de jamaica con un toque de limón y hierbabuena. Ácida, frutal y sin cafeína.', 45.00, 4, 'https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?w=800&q=80&auto=format&fit=crop', 4.4, 110, 484.0);
 
 -- Carritos (fechas en UTC)
 INSERT INTO public.carritos (id, usuario_id, estado, fecha_creacion) VALUES
@@ -373,13 +374,13 @@ INSERT INTO public.carritos (id, usuario_id, estado, fecha_creacion) VALUES
 
 -- Items del carrito (precio_unitario = precio del producto al agregarlo)
 INSERT INTO public.carrito_items (carrito_id, producto_id, cantidad, precio_unitario) VALUES
-(1, 1, 2, 125.50),
-(1, 5, 1, 45.00),
-(1, 12, 1, 49.99),
-(2, 3, 1, 89.00),
-(2, 2, 3, 28.99),
-(3, 9, 1, 79.99),
-(3, 13, 1, 149.99);
+(1, 1, 2, 35.00),
+(1, 5, 1, 60.00),
+(1, 12, 1, 75.00),
+(2, 3, 1, 55.00),
+(2, 2, 3, 40.00),
+(3, 9, 1, 65.00),
+(3, 13, 1, 75.00);
 
 -- Los ids se insertaron a mano: se avanza cada contador para que los registros
 -- nuevos (por ejemplo, un producto creado desde la app) continúen después del último.
